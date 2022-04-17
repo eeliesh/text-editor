@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 import ntpath
+from tkinter import messagebox
 import helpers.constants as constants
 
 
@@ -30,7 +31,7 @@ class File:
 
         self.opened_file = None
 
-        self.opened_windows[self.current_window + 1] = {
+        self.opened_windows[len(self.opened_windows)] = {
             'index': '!button' + str(len(self.opened_windows) + 1),
             'file_name': 'New File',
             'file_content': '',
@@ -39,14 +40,21 @@ class File:
 
         self.current_window = len(self.opened_windows) - 1
 
-        button = tk.Button(self.toolbar, text="New File",
-                           bg=constants.LIGHT_GRAY, fg=constants.FOREGROUND_COLOR, font=constants.SMALL_FONT, command=lambda index=self.current_window: self.update_window(index))
-        button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.append_button('New File')
+
+    # append button
+    def append_button(self, name):
+        button = tk.Button(self.toolbar, text=name,
+                           bg=constants.SELECT_BACKGROUND, fg=constants.WHITE_COLOR, relief=tk.FLAT, font=constants.SMALL_FONT, command=lambda index=self.current_window: self.update_window(index))
+        button.pack(side=tk.LEFT, padx=3, pady=0)
+
+        for key, window in self.opened_windows.items():
+            if key != self.current_window:
+                self.toolbar.children[window['index']].config(
+                    background=constants.BUTTON_BACKGROUND, foreground=constants.FOREGROUND_COLOR)
 
     # open a file
     def open(self):
-        self.text_box.delete(1.0, tk.END)
-
         text_file = filedialog.askopenfile(
             initialdir="/", title="Select file", filetypes=self.file_types)
         self.root.title(ntpath.basename(text_file.name) + " - Text Editor")
@@ -57,11 +65,12 @@ class File:
         text_file = open(text_file.name, "r")
         content = text_file.read()
 
+        self.text_box.delete(1.0, tk.END)
         self.text_box.insert(tk.END, content)
 
         text_file.close()
 
-        self.opened_windows[self.current_window + 1] = {
+        self.opened_windows[len(self.opened_windows)] = {
             'index': '!button' + str(len(self.opened_windows) + 1),
             'file_name': ntpath.basename(text_file.name),
             'file_content': content,
@@ -70,9 +79,7 @@ class File:
 
         self.current_window = len(self.opened_windows) - 1
 
-        button = tk.Button(self.toolbar, text=ntpath.basename(text_file.name),
-                           bg=constants.LIGHT_GRAY, fg=constants.FOREGROUND_COLOR, font=constants.SMALL_FONT, command=lambda index=self.current_window: self.update_window(index))
-        button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.append_button(ntpath.basename(text_file.name))
 
     # close the file
     def close(self):
@@ -155,6 +162,92 @@ class File:
         self.current_window = index
         self.opened_file = self.opened_windows[self.current_window]['file_path']
 
+        self.toolbar.children[self.opened_windows[self.current_window]['index']].config(
+            background=constants.SELECT_BACKGROUND, foreground="#FFFFFF")
+
+        for key, window in self.opened_windows.items():
+            if key != self.current_window:
+                self.toolbar.children[window['index']].config(
+                    background=constants.BUTTON_BACKGROUND, foreground=constants.FOREGROUND_COLOR)
+
+        self.root.title(
+            self.opened_windows[self.current_window]['file_name'] + " - Text Editor")
+
         self.text_box.delete(1.0, tk.END)
         self.text_box.insert(
             tk.END, self.opened_windows[self.current_window]['file_content'])
+
+    # find in file
+    def find(self):
+        self.find_window = tk.Toplevel(self.root)
+        self.find_window.title("Find")
+        self.find_window.geometry("250x60")
+
+        self.find_label = tk.Label(self.find_window, text="Find:")
+        self.find_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.find_entry = tk.Entry(
+            self.find_window, relief=tk.FLAT, background=constants.BUTTON_BACKGROUND)
+        self.find_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.find_button = tk.Button(
+            self.find_window, text="Search", command=self.find_text, relief=tk.FLAT, background=constants.BUTTON_BACKGROUND, foreground=constants.FOREGROUND_COLOR)
+        self.find_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+    # find text in the text box
+    def find_text(self):
+        text = self.find_entry.get()
+        self.text_box.tag_remove("found", 1.0, tk.END)
+
+        if text:
+            start_pos = self.text_box.search(text, 1.0, tk.END)
+            while start_pos:
+                end_pos = f"{start_pos}+{len(text)}c"
+                self.text_box.tag_add("found", start_pos, end_pos)
+                start_pos = self.text_box.search(text, end_pos, tk.END)
+            self.text_box.tag_config(
+                "found", background="yellow")
+
+        self.find_window.protocol("WM_DELETE_WINDOW", self.on_search_close)
+
+    # on search window close
+    def on_search_close(self):
+        self.text_box.tag_remove("found", 1.0, tk.END)
+        self.find_window.destroy()
+
+    # replace in text
+    def replace(self):
+        self.replace_window = tk.Toplevel(self.root)
+        self.replace_window.title("Replace")
+        self.replace_window.geometry("420x60")
+
+        self.replace_label = tk.Label(self.replace_window, text="Find:")
+        self.replace_label.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.replace_entry = tk.Entry(
+            self.replace_window, relief=tk.FLAT, background=constants.BUTTON_BACKGROUND)
+        self.replace_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.replace_label2 = tk.Label(self.replace_window, text="Replace:")
+        self.replace_label2.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.replace_entry2 = tk.Entry(
+            self.replace_window, relief=tk.FLAT, background=constants.BUTTON_BACKGROUND)
+        self.replace_entry2.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.replace_button = tk.Button(
+            self.replace_window, text="Go", command=self.replace_text, relief=tk.FLAT, background=constants.BUTTON_BACKGROUND, foreground=constants.FOREGROUND_COLOR)
+        self.replace_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+    # replace text
+    def replace_text(self):
+        text = self.replace_entry.get()
+        replace_text = self.replace_entry2.get()
+
+        if text:
+            start_pos = self.text_box.search(text, 1.0, tk.END)
+            while start_pos:
+                end_pos = f"{start_pos}+{len(text)}c"
+                self.text_box.delete(start_pos, end_pos)
+                self.text_box.insert(start_pos, replace_text)
+                start_pos = self.text_box.search(text, end_pos, tk.END)

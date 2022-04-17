@@ -16,7 +16,7 @@ class App:
 
         # create the main frame
         self.main_frame = tk.Frame(self.root)
-        self.main_frame.pack(pady=5)
+        self.main_frame.pack(pady=2)
 
         # create the scrollbar
         self.text_scrollbar = tk.Scrollbar(self.main_frame)
@@ -126,26 +126,27 @@ class App:
             label="Copy", command=lambda: self.file.copy_text(False), accelerator="Ctrl+C")
         self.edit_menu.add_command(
             label="Paste", command=lambda: self.file.paste_text(False), accelerator="Ctrl+V")
-        self.edit_menu.add_command(label="Delete")
         self.edit_menu.add_separator()
         self.edit_menu.add_command(label="Select All")
-        self.edit_menu.add_command(label="Find")
-        self.edit_menu.add_command(label="Find Next")
-        self.edit_menu.add_command(label="Replace")
+        self.edit_menu.add_command(
+            label="Find", command=self.file.find, accelerator="Ctrl+F")
+        self.edit_menu.add_command(
+            label="Replace", command=self.file.replace, accelerator="Ctrl+H")
 
     # draw toolbar button
-    def draw_button(self, button_text):
+    def draw_button(self, button_text, bg, fg):
         # create the button
         button = tk.Button(self.toolbar, text=button_text,
-                           bg=constants.LIGHT_GRAY, fg=constants.FOREGROUND_COLOR, font=constants.SMALL_FONT, command=lambda index=0: self.file.update_window(index))
+                           bg=bg, fg=fg, relief=tk.FLAT, font=constants.SMALL_FONT, command=lambda index=0: self.file.update_window(index))
 
         # add the button to the toolbar
-        button.pack(side=tk.LEFT, padx=5, pady=5)
+        button.pack(side=tk.LEFT, padx=3, pady=0)
 
     # create the toolbar buttons
     def toolbar_buttons(self):
         for key, window in self.file.opened_windows.items():
-            self.draw_button(window['file_name'])
+            self.draw_button(
+                window['file_name'], constants.SELECT_BACKGROUND, constants.WHITE_COLOR)
 
     # count letters
     def count_letters(self, text):
@@ -218,6 +219,11 @@ class App:
         self.root.bind("<Control-c>", lambda event: self.file.copy_text(event))
         self.root.bind(
             "<Control-v>", lambda event: self.file.paste_text(event))
+
+        self.root.bind("<Control-w>", lambda event: self.file.close())
+
+        self.root.bind("<Control-f>", lambda event: self.file.find())
+        self.root.bind("<Control-h>", lambda event: self.file.replace())
 
         self.root.bind("<KeyPress>", self.update)
         #self.root.bind("<KeyRelease>", self.update_statistics)
