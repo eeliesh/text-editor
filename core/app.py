@@ -61,7 +61,8 @@ class App:
             relx=1.0, rely=1.0, x=-2, y=-2, anchor=tk.SE, relwidth=1.0)
 
         # create the file object
-        self.file = File(self.root, self.text_box, self.toolbar)
+        self.file = File(self.root, self.text_box,
+                         self.toolbar, self.statistics_bar)
 
     # run the app
     def run(self):
@@ -75,6 +76,10 @@ class App:
             'file_content': self.text_box.get("1.0", tk.END),
             'file_path': None
         }
+
+        # update the title
+        self.root.title(
+            f"{self.file.opened_windows[0]['file_name']} - {constants.APP_NAME}")
 
         # create the toolbar buttons
         self.toolbar_buttons()
@@ -127,7 +132,6 @@ class App:
         self.edit_menu.add_command(
             label="Paste", command=lambda: self.file.paste_text(False), accelerator="Ctrl+V")
         self.edit_menu.add_separator()
-        self.edit_menu.add_command(label="Select All")
         self.edit_menu.add_command(
             label="Find", command=self.file.find, accelerator="Ctrl+F")
         self.edit_menu.add_command(
@@ -148,66 +152,6 @@ class App:
             self.draw_button(
                 window['file_name'], constants.SELECT_BACKGROUND, constants.WHITE_COLOR)
 
-    # count letters
-    def count_letters(self, text):
-        letters = 0
-        for char in text:
-            if char.isalpha():
-                letters += 1
-        return letters
-
-    # count symbols
-    def count_symbols(self, text):
-        symbols = 0
-        for char in text:
-            if char.isalpha() == False and char.isdigit() == False:
-                symbols += 1
-        return symbols
-
-    # update the statistics
-    def update(self, event):
-        # get the text
-        text = self.text_box.get(1.0, tk.END)
-
-        # get the number of lines
-        lines = text.count("\n")
-
-        # get the number of words
-        words = len(text.split())
-
-        # get the number of sentences
-        sentences = len(text.split("."))
-
-        # get the number of symbols
-        symbols = self.count_symbols(text)
-
-        # get the number of letters
-        letters = self.count_letters(text)
-
-        # get the number of paragraphs
-        paragraphs = text.count("\n\n")
-
-        # update the statistics
-        statistics = {
-            "symbols": symbols,
-            "lines": lines,
-            "letters": letters,
-            "words": words,
-            "sentences": sentences,
-            "paragraphs": paragraphs
-        }
-
-        stats_text = ""
-        for key, value in statistics.items():
-            stats_text += f"{key.capitalize()}: {value} | "
-
-        # update the statistics bar
-        self.statistics_bar.config(text=stats_text)
-
-        # update file content
-        self.file.opened_windows[self.file.current_window]['file_content'] = self.text_box.get(
-            1.0, tk.END)
-
     # bind the events
     def bind_events(self):
         self.root.bind("<Control-n>", lambda event: self.file.new())
@@ -225,5 +169,5 @@ class App:
         self.root.bind("<Control-f>", lambda event: self.file.find())
         self.root.bind("<Control-h>", lambda event: self.file.replace())
 
-        self.root.bind("<KeyPress>", self.update)
+        self.root.bind("<KeyPress>", self.file.update)
         #self.root.bind("<KeyRelease>", self.update_statistics)

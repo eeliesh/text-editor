@@ -6,10 +6,11 @@ import helpers.constants as constants
 
 
 class File:
-    def __init__(self, root, text_box, toolbar):
+    def __init__(self, root, text_box, toolbar, statistics_bar):
         self.root = root
         self.text_box = text_box
         self.toolbar = toolbar
+        self.statistics_bar = statistics_bar
 
         self.file_types = (
             ("Text Files", "*.txt"),
@@ -41,6 +42,8 @@ class File:
         self.current_window = len(self.opened_windows) - 1
 
         self.append_button('New File')
+
+        self.update(False)
 
     # append button
     def append_button(self, name):
@@ -80,6 +83,8 @@ class File:
         self.current_window = len(self.opened_windows) - 1
 
         self.append_button(ntpath.basename(text_file.name))
+
+        self.update(False)
 
     # close the file
     def close(self):
@@ -251,3 +256,64 @@ class File:
                 self.text_box.delete(start_pos, end_pos)
                 self.text_box.insert(start_pos, replace_text)
                 start_pos = self.text_box.search(text, end_pos, tk.END)
+
+    # count letters
+    def count_letters(self, text):
+        letters = 0
+        for char in text:
+            if char.isalpha():
+                letters += 1
+        return letters
+
+    # count symbols
+    def count_symbols(self, text):
+        symbols = 0
+        for char in text:
+            if char != ' ' and char != '\n':
+                if char.isalpha() == False and char.isdigit() == False:
+                    symbols += 1
+        return symbols
+
+    # update the statistics
+    def update(self, event):
+        # get the text
+        text = self.text_box.get(1.0, tk.END)
+
+        # get the number of lines
+        lines = text.count("\n")
+
+        # get the number of words
+        words = len(text.split())
+
+        # get the number of sentences
+        sentences = text.count(".") + text.count("!") + text.count("?")
+
+        # get the number of symbols
+        symbols = self.count_symbols(text)
+
+        # get the number of letters
+        letters = self.count_letters(text)
+
+        # get the number of paragraphs
+        paragraphs = text.count("\n\n")
+
+        # update the statistics
+        statistics = {
+            "symbols": symbols,
+            "lines": lines,
+            "letters": letters,
+            "words": words,
+            "sentences": sentences,
+            "paragraphs": paragraphs
+        }
+
+        stats_text = ""
+        for key, value in statistics.items():
+            stats_text += f"{key.capitalize()}: {value} | "
+
+        # update the statistics bar
+        self.statistics_bar.config(text=stats_text)
+
+        # update file content
+        self.opened_windows[self.current_window]['file_content'] = self.text_box.get(
+            1.0, tk.END)
